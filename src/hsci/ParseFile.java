@@ -15,8 +15,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import indexesPredictionUtils.Util;
+
 public class ParseFile {
-	public static final String DATE_FORMAT = "dd/MM/yyyy";
 	/*
 	 * To read and parse the files from bloomberg
 	 * Typically, a file looks like this
@@ -38,7 +39,7 @@ public class ParseFile {
 	 *    ArrayList_stockData & ArrayList_date
 	 *  e.g.
 	 *  ArrayList_stockData = {12,23,24....} ArrayList_stockData in the format of ArrayList<Double>
-	 *  ArrayList_date = {2016-06-01, 2017-05-04, ...} ArrayList_date in the format of ArrayList<Date>
+	 *  ArrayList_date = {2016-06-01, 2017-05-04, ...} ArrayList_date in the format of ArrayList<Calendar>
 	 *  
 	 * @param filePath
 	 * @return
@@ -59,19 +60,19 @@ public class ParseFile {
 			lineArr.addAll(Arrays.asList(line.split(",")));
 			
 			// to store date
-			ArrayList<Date> masterDate = new ArrayList<Date>();
+			ArrayList<Calendar> masterDate = new ArrayList<Calendar>();
 			
 			if(counter == 0){ //excluding header
 				String stockCode = lineArr.get(0);
 				
 				ArrayList<Double> stockData = new ArrayList<Double>(); 
-				ArrayList<Date> dateToRemove = new ArrayList<Date>();
+				ArrayList<Calendar> dateToRemove = new ArrayList<Calendar>();
 				
 				for(int i = 1; i < lineArr.size(); i++) {
 					String data = lineArr.get(i);
 					
 					// test for every data in this row
-					if(!isDouble(data)) { // if the data is not correct
+					if(!Util.isDouble(data)) { // if the data is not correct, then remove
 						dateToRemove.add(masterDate.get(i));
 					}else {
 						stockData.add(Double.parseDouble(data));
@@ -87,7 +88,7 @@ public class ParseFile {
 				
 			}else { // header
 				// stores all trading date, but for some stocks, it has no trading on this date
-				masterDate = dateStr2Date(lineArr.subList(1, lineArr.size()-2), DATE_FORMAT);
+				masterDate = Util.dateStr2Date(lineArr.subList(1, lineArr.size()-2), Util.DATE_FORMAT);
 			}
 			counter++;
 		}
@@ -95,45 +96,7 @@ public class ParseFile {
 		return dataByStock;
 	}
 	
-	/**
-	 * to convert a date array in String to in the form of ArrayList<Date>
-	 * @param dateArr
-	 * @param dateFormat
-	 * @return date arrray
-	 * @throws Exception
-	 */
-	public static ArrayList<Date> dateStr2Date(List<String> dateArr, String dateFormat) throws Exception{
-		ArrayList<Date> toReturn = new ArrayList<Date> ();
-		
-		for(int i = 0; i < dateArr.size(); i++) {
-			String todayDateStr = dateArr.get(i);
-			
-			SimpleDateFormat sdf =   new SimpleDateFormat(dateFormat);
-			Date date = sdf.parse(todayDateStr);
-			
-			toReturn.add(date);
-		}
-		
-		return toReturn;
-	}
 	
-	/**
-	 * check if a String is a double
-	 * @param str
-	 * @return
-	 */
-	public static boolean isDouble(String str) {
-		boolean isOK = true;
-		
-		try {
-			double d = Double.parseDouble(str);
-		}catch(NumberFormatException nfe) {
-			isOK = false;
-		}
-		catch(Exception e) {
-			isOK = false;
-		}
-		
-		return isOK;
-	}
+	
+
 }
