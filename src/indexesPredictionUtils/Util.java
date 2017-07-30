@@ -1,10 +1,17 @@
 package indexesPredictionUtils;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+
 
 public class Util {
 	public static final String DATE_FORMAT = "dd/MM/yyyy";
@@ -105,5 +112,111 @@ public class Util {
 		SimpleDateFormat sdf =   new SimpleDateFormat(dateFormat);
 		
 		return sdf.format(cal.getTime());
+	}
+	
+	/**
+	 * to write data into a file. Line by line.
+	 * @param data
+	 * @param filePath
+	 * @return
+	 */
+	public static boolean writeArrayListToFile(ArrayList<String> data, String filePath){
+		boolean isOK = true;
+		
+		try{
+			FileWriter fw = new FileWriter(filePath);
+			for(String dataLine : data){
+				fw.write(dataLine);
+				
+				String subStr = dataLine.substring(dataLine.length()-2, dataLine.length());
+				if(!subStr.equals("\n"))
+					fw.write("\n");
+			}
+			fw.close();
+		}catch(Exception e){
+			e.printStackTrace();
+			isOK = false;
+		}
+		
+		return isOK;
+	}
+	
+	public static ArrayList<String> readFileByLine(String filePath) throws Exception{
+		ArrayList<String> data = new ArrayList<String> ();
+		
+		InputStream input = new FileInputStream(new File(filePath));
+		InputStreamReader inputStreamReader = new InputStreamReader(input);
+		BufferedReader bufReader = new BufferedReader(inputStreamReader);
+		
+		String line = "";
+		while ((line = bufReader.readLine()) != null) {
+			data.add(line);
+		}
+		
+		return data;
+	}
+	
+	public static BufferedReader readFile_returnBufferedReader(String filePath) throws Exception{
+		ArrayList<String> data = new ArrayList<String> ();
+		
+		InputStream input = new FileInputStream(new File(filePath));
+		InputStreamReader inputStreamReader = new InputStreamReader(input);
+		BufferedReader bufReader = new BufferedReader(inputStreamReader);
+		
+		return bufReader;
+	}
+	
+	public static ArrayList<Calendar> changeStrDateToArray(String[] dateStrArr, String dateFormat) throws Exception{
+		ArrayList<Calendar> dateArr = new ArrayList<Calendar>();
+		
+		for(int i = 0; i < dateStrArr.length; i++){
+			SimpleDateFormat sdf = new SimpleDateFormat(dateFormat) ;
+			Calendar thisCal = Calendar.getInstance();
+			Date thisDate = sdf.parse(dateStrArr[i]);
+			thisCal.setTime(thisDate);
+			dateArr.add(thisCal);
+		}
+		
+		return dateArr;
+		
+	}
+	
+	/**
+	 * to change date string to ArrayList<Calendar>
+	 * e.g. input could be {"2017-07-27", "2017-07-28", "2017-07-29",....}
+	 * output is an ArrayList<Calendar>
+	 * @param dateStrArr
+	 * @param dateFormat
+	 * @return
+	 * @throws Exception
+	 */
+	public static ArrayList<Calendar> changeStrDateToArray(List<String> dateStrArr, String dateFormat) throws Exception{
+		ArrayList<Calendar> dateArr = new ArrayList<Calendar>();
+		
+		for(int i = 0; i < dateStrArr.size(); i++){
+			SimpleDateFormat sdf = new SimpleDateFormat(dateFormat) ;
+			Calendar thisCal = Calendar.getInstance();
+			Date thisDate = sdf.parse(dateStrArr.get(i));
+			thisCal.setTime(thisDate);
+			dateArr.add(thisCal);
+		}
+		
+		return dateArr;
+		
+	}
+	
+	/**
+	 * get day difference. If c1 is before c2, it returns a negative number
+	 * it could be a decimal
+	 * @param c1
+	 * @param c2
+	 * @return
+	 * @throws Exception
+	 */
+	public static double getDayDiff(Calendar c1, Calendar c2) throws Exception{
+		Date d1 = c1.getTime();
+		Date d2 = c2.getTime();
+		
+		return (double) (d1.getTime() - d2.getTime()) / (double) (1000 * 3600 * 24);
 	}
 }

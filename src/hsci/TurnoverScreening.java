@@ -108,6 +108,7 @@ public class TurnoverScreening {
 			// ============== calculate turnover velocity ==============
 			// eachMonthTurnonverMedian is an ArrayList<Double> with 12 elements
 			//eachMonthTurnonverMedian.get(0) is the median turnover of Jun 2017 (if the cutoff date is 30Jun 2017)
+			// if for some month, the data is null, it represents that no data for that month
 			ArrayList<Double> eachMonthTurnonverMedian = getMedian(eachMonthTurnonver);
 			allStockEachMonthMedianTurnover.add(eachMonthTurnonverMedian);
 			
@@ -123,31 +124,61 @@ public class TurnoverScreening {
 			ArrayList<Double> isEachMonthPassTurnoverScreening = new ArrayList<Double>();
 			int okOver12Month = 0;
 			int okOver6Month = 0;
+			int numOfNull = 0; // num of Null, if Null, this month is not counted for screening
 			
 			for(int j = 0; j < eachMonthTurnonverMedian.size(); j++) {
-				Double thisMonthTurnoverVelocity = eachMonthTurnonverMedian.get(j) / (eachMonthTotalIssuedShares.get(j) * eachMonthAdjFreefloatFactor.get(j));
+				Double thisMonthTurnoverVelocity = null;
+				if(eachMonthTurnonverMedian.get(j) != null)
+					thisMonthTurnoverVelocity = eachMonthTurnonverMedian.get(j) / (eachMonthTotalIssuedShares.get(j) * eachMonthAdjFreefloatFactor.get(j));
+				else
+					numOfNull++;
 				eachMonthTurnoverVelocity.add(thisMonthTurnoverVelocity);
 				
-				if(thisMonthTurnoverVelocity > 0.0005) {
-					isEachMonthPassTurnoverScreening.add(1.0);
-					
-					okOver12Month ++;
-					if(j < 6) {
-						okOver6Month ++;
+				if(thisMonthTurnoverVelocity == null){
+					isEachMonthPassTurnoverScreening.add(-1.0); // this month is not counted for screening test
+				}else{
+					if(thisMonthTurnoverVelocity > 0.0005) {
+						isEachMonthPassTurnoverScreening.add(1.0);
+						
+						okOver12Month ++;
+						if(j < 6) {
+							okOver6Month ++;
+						}
+					}else {
+						isEachMonthPassTurnoverScreening.add(0.0);
 					}
-				}else {
-					isEachMonthPassTurnoverScreening.add(0.0);
 				}
+				
 			}
 			allStockEachMonthTurnoverVelocity.add(eachMonthTurnoverVelocity);
 			allStockPast12MonthPassTurnoverScreen.add((double) okOver12Month);
 			allStockPast6MonthPassTurnoverScreen.add((double) okOver6Month);
 			
 			//============== screening using turnover velocity ================
-			if(okOver12Month >= 10 && okOver6Month >= 5) {
+			boolean isPassed = true;
+			// first see if it has months not counted for screening
+			if(numOfNull > 0){
+				int numOfTradingMonth = 12 - numOfNull;
+				// then see if the num of trading month >= 6 months
+				if(numOfTradingMonth >= 6){
+					// if num of trading month >= 6 months, to pass the screening, there should be at most 1 failed month
+					if(numOfTradingMonth - okOver12Month > 1 ){
+						isPassed = false;
+					}
+				}else{
+					// if num of trading month < 6 months, all months should not be failed
+					if(numOfTradingMonth > okOver12Month)
+						isPassed = false;
+				}
+			}else{
+				if(!(okOver12Month >= 10 && okOver6Month >= 5)) 
+					isPassed = false;
+			}
+			
+			if(isPassed){
 				eligibleStocks.add(stockCode);
 				allStockPassTurnoverScreen.add(1.0);
-			}else {
+			}else{
 				allStockPassTurnoverScreen.add(0.0);
 			}
 		
@@ -167,7 +198,17 @@ public class TurnoverScreening {
 		for(int i = 0; i < eachMonthTurnonver.size(); i++) {
 			ArrayList<Double> thisMonthTurnoverData = eachMonthTurnonver.get(i);
 			
-			Double thisMonthTurnoverMedian = getSingleArrayMedian(thisMonthTurnoverData);
+			Double thisMonthTurnoverMedian = null;
+			
+			if(thisMonthTurnoverData != null){ // if not listed this month
+				// to see if the trading volume is not always 0 this month
+				double cumTurn = 0.0;
+				for(int j = 0; j < thisMonthTurnoverData.size(); j++){
+					cumTurn = cumTurn + thisMonthTurnoverData.get(j);
+				}
+				if(cumTurn > 0)
+					thisMonthTurnoverMedian = getSingleArrayMedian(thisMonthTurnoverData);
+			}
 			
 			medianTurnover.add(thisMonthTurnoverMedian);
 		}

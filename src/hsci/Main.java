@@ -34,7 +34,7 @@ public class Main {
 				
 				String filePath = "";
 			
-				Map<String, ArrayList> stockDataMap = ParseFile.parseFile(filePath);
+				Map<String, ArrayList<Object>> stockDataMap = ParseFile.parseFile(filePath);
 				
 				for(int i = 0; i < stocksForScreening.size(); i++) {
 					String stockCode = stocksForScreening.get(i);
@@ -49,14 +49,12 @@ public class Main {
 					}
 					
 				}
-			}
+			} // end of if
 			
-			Calendar lastMonthCal = Util.dateStr2Date("01/03/2017", Util.DATE_FORMAT);
-			int thisMonth = lastMonthCal.get(Calendar.MONTH);
-			lastMonthCal.add(Calendar.DATE, -1);
-			int lastMonth = lastMonthCal.get(Calendar.MONTH);
+			Map<String, ArrayList<Object>> allStockData = 
+					ParseFile.parseFile("D:\\stock data\\indexes prediction\\stock_connect_turnover_screen.csv");
+			TurnoverScreening ts = new 
 			
-			System.out.println(thisMonth -lastMonth );
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block

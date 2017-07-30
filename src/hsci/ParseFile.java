@@ -3,17 +3,20 @@ package hsci;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import indexesPredictionUtils.Util;
 
@@ -39,64 +42,109 @@ public class ParseFile {
 	 *    ArrayList_stockData & ArrayList_date
 	 *  e.g.
 	 *  ArrayList_stockData = {12,23,24....} ArrayList_stockData in the format of ArrayList<Double>
+	 *     if it is halted for trading, the turnover is 0 at that day
 	 *  ArrayList_date = {2016-06-01, 2017-05-04, ...} ArrayList_date in the format of ArrayList<Calendar>
 	 *  
 	 * @param filePath
 	 * @return
 	 * @throws Exception
 	 */
-	public static Map<String, ArrayList> parseFile(String filePath)  throws Exception{
-		Map<String, ArrayList> dataByStock = new HashMap();
+	public static Map<String, ArrayList<Object>> parseFile(String filePath)  throws Exception{
+		/*
+		 * Please note that this function is designed to parse a specific file, it is not universally applicable.
+		 */
+		Map<String, ArrayList<Object>> dataByStock = new HashMap();
+		//========= before read stock file, get all trading date first =========
+		String tradingDateFilePath = "D:\\stock data\\indexes prediction\\all trading date.csv";
+		String allTradingDateStr = Util.readFileByLine(tradingDateFilePath).get(0);
+		String[]  allTradingDateStrArr = allTradingDateStr.split(",");
+		ArrayList<Calendar> allTradingDate = Util.changeStrDateToArray(allTradingDateStrArr, "yyyy/MM/dd");
 		
-		// read file
-		InputStream input = new FileInputStream(new File(filePath));
-		InputStreamReader inputStreamReader = new InputStreamReader(input);
-		BufferedReader bufReader = new BufferedReader(inputStreamReader);
+		// ============ get stock-specific trading date & turnover =============
+		BufferedReader bufReader = Util.readFile_returnBufferedReader(filePath);
 		
-		String line = "";
+		String line1 = "";
+		String line2 = "";
 		int counter = 0;
-		while ((line = bufReader.readLine()) != null) {
-			ArrayList<String> lineArr = new ArrayList<String>();
-			lineArr.addAll(Arrays.asList(line.split(",")));
+		while ((line1 = bufReader.readLine()) != null) {
+			//read 2 lines at once
+			ArrayList<String> line1Arr = new ArrayList<String>();
+			line1Arr.addAll(Arrays.asList(line1.split(",")));
 			
-			// to store date
-			ArrayList<Calendar> masterDate = new ArrayList<Calendar>();
+			line2 = bufReader.readLine();
+			ArrayList<String> line2Arr = new ArrayList<String>();
+			line2Arr.addAll(Arrays.asList(line2.split(",")));
+			line2Arr.remove(0);
+			line2Arr.remove(0); // remove the 1st two elements
 			
-			if(counter == 0){ //excluding header
-				String stockCode = lineArr.get(0);
-				
-				ArrayList<Double> stockData = new ArrayList<Double>(); 
-				ArrayList<Calendar> dateToRemove = new ArrayList<Calendar>();
-				
-				for(int i = 1; i < lineArr.size(); i++) {
-					String data = lineArr.get(i);
-					
-					// test for every data in this row
-					if(!Util.isDouble(data)) { // if the data is not correct, then remove
-						dateToRemove.add(masterDate.get(i));
-					}else {
-						stockData.add(Double.parseDouble(data));
-					}
+			// get date & data
+			ArrayList<Calendar> thisStockTradingDate = Util.changeStrDateToArray(line1Arr.subList(2, line1Arr.size()), "yyyy/MM/dd");
+			ArrayList<String> thisStockVol = line2Arr;
+			
+			// align thisStockTradingDate with allTradingDate
+			int thisInd_thisStockTradingDate = 0; 
+			Calendar thisStockFirstTradingDate = thisStockTradingDate.get(0);
+			for(int i = allTradingDate.indexOf(thisStockFirstTradingDate); i < allTradingDate.size(); i++){
+				Calendar eachTradingDate = allTradingDate.get(i);
+				if(thisStockTradingDate.indexOf(eachTradingDate) == -1){ // if stock halt trading on this date 
+					thisStockTradingDate.add(thisInd_thisStockTradingDate, eachTradingDate);
+					thisStockVol.add(thisInd_thisStockTradingDate,"0");
 				}
-				masterDate.removeAll(dateToRemove);
+				thisInd_thisStockTradingDate++;
+			}// end of for
+			
+			// ============= get free float percentage =============
+			
+			
+			// ============= add to dataByStock ============= 
+			String stockCode = line1Arr.get(0);
+			ArrayList<Object> thisStockData = new ArrayList<Object>();
+			thisStockData.add(thisStockVol);
+			thisStockData.add(thisStockTradingDate);
+			dataByStock.put(stockCode, thisStockData);
+		}
+		
+		/*
+		 * From now on, we can use the below files as data source. 
+		 */
+		// ========== print dataByStock ==========
+		boolean toPrint = true;
+		if(toPrint){
+			String writefilePath = "D:\\stock data\\indexes prediction\\stock_connect_turnover_screen_new.csv";
+			FileWriter fw = new FileWriter(writefilePath);
+			
+			Set<String> allStock = dataByStock.keySet();
+			
+			int counter1 = 0;
+			for(String stockCode : allStock){
 				
-				ArrayList rowData = new ArrayList();
-				rowData.add(stockData);
-				rowData.addAll(masterDate);
+				ArrayList<Object> thisStockData = dataByStock.get(stockCode);
 				
-				dataByStock.put(stockCode, rowData);
+				ArrayList<String> thisStockVol = (ArrayList<String>) thisStockData.get(0);
+				ArrayList<Calendar> thisStockDate = (ArrayList<Calendar>) thisStockData.get(1);
 				
-			}else { // header
-				// stores all trading date, but for some stocks, it has no trading on this date
-				masterDate = Util.dateStr2Date(lineArr.subList(1, lineArr.size()-2), Util.DATE_FORMAT);
+				String volLine = stockCode ;
+				String dateLine = stockCode;
+				
+				for(int i = 0; i < thisStockVol.size(); i++){
+					volLine = volLine + "," + thisStockVol.get(i);
+					dateLine = dateLine + "," + Util.date2Str(thisStockDate.get(i), "yyyy/MM/dd");
+				}
+				
+				fw.write(dateLine);
+				fw.write("\n");
+				fw.write(volLine);
+				
+				counter1++;
+				if(counter1 != allStock.size())
+					fw.write("\n");
+				
 			}
-			counter++;
+			fw.close();
 		}
 		
 		return dataByStock;
 	}
 	
 	
-	
-
 }
