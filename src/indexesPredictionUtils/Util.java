@@ -61,6 +61,24 @@ public class Util {
 	}
 	
 	/**
+	 * get the month difference between 2 date. If c1 is before c2, the diff would be negative
+	 * e.g. if c1 = 2017/07/07, c2 = 2017/06/30, it will return 1 
+	 * @param c1
+	 * @param c2
+	 * @return
+	 * @throws Exception
+	 */
+	public static int getMonthDiff(Calendar c1, Calendar c2) throws Exception{
+		int month1 = c1.get(Calendar.MONTH);
+		int year1 = c1.get(Calendar.YEAR);
+		
+		int month2 = c2.get(Calendar.MONTH);
+		int year2 = c2.get(Calendar.YEAR);
+		
+		return  (year1 * 12 + month1) - (year2*12 + month2);
+	}
+	
+	/**
 	 * check if a String is a double
 	 * @param str
 	 * @return

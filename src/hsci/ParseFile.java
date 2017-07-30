@@ -55,7 +55,7 @@ public class ParseFile {
 		 */
 		Map<String, ArrayList<Object>> dataByStock = new HashMap();
 		//========= before read stock file, get all trading date first =========
-		String tradingDateFilePath = "D:\\stock data\\indexes prediction\\all trading date.csv";
+		String tradingDateFilePath = "D:\\stock data\\Indexes Prediction\\HSCI\\all trading date.csv";
 		String allTradingDateStr = Util.readFileByLine(tradingDateFilePath).get(0);
 		String[]  allTradingDateStrArr = allTradingDateStr.split(",");
 		ArrayList<Calendar> allTradingDate = Util.changeStrDateToArray(allTradingDateStrArr, "yyyy/MM/dd");
@@ -79,7 +79,10 @@ public class ParseFile {
 			
 			// get date & data
 			ArrayList<Calendar> thisStockTradingDate = Util.changeStrDateToArray(line1Arr.subList(2, line1Arr.size()), "yyyy/MM/dd");
-			ArrayList<String> thisStockVol = line2Arr;
+			ArrayList<String> thisStockVolStr = line2Arr;
+			ArrayList<Double> thisStockVol = new ArrayList<Double>();
+			for(String str : thisStockVolStr)
+				thisStockVol.add(Double.parseDouble(str));
 			
 			// align thisStockTradingDate with allTradingDate
 			int thisInd_thisStockTradingDate = 0; 
@@ -88,13 +91,10 @@ public class ParseFile {
 				Calendar eachTradingDate = allTradingDate.get(i);
 				if(thisStockTradingDate.indexOf(eachTradingDate) == -1){ // if stock halt trading on this date 
 					thisStockTradingDate.add(thisInd_thisStockTradingDate, eachTradingDate);
-					thisStockVol.add(thisInd_thisStockTradingDate,"0");
+					thisStockVol.add(thisInd_thisStockTradingDate,0.0);
 				}
 				thisInd_thisStockTradingDate++;
 			}// end of for
-			
-			// ============= get free float percentage =============
-			
 			
 			// ============= add to dataByStock ============= 
 			String stockCode = line1Arr.get(0);
@@ -120,14 +120,14 @@ public class ParseFile {
 				
 				ArrayList<Object> thisStockData = dataByStock.get(stockCode);
 				
-				ArrayList<String> thisStockVol = (ArrayList<String>) thisStockData.get(0);
+				ArrayList<Double> thisStockVol = (ArrayList<Double>) thisStockData.get(0);
 				ArrayList<Calendar> thisStockDate = (ArrayList<Calendar>) thisStockData.get(1);
 				
 				String volLine = stockCode ;
 				String dateLine = stockCode;
 				
 				for(int i = 0; i < thisStockVol.size(); i++){
-					volLine = volLine + "," + thisStockVol.get(i);
+					volLine = volLine + "," + String.valueOf(thisStockVol.get(i));
 					dateLine = dateLine + "," + Util.date2Str(thisStockDate.get(i), "yyyy/MM/dd");
 				}
 				
@@ -146,5 +146,60 @@ public class ParseFile {
 		return dataByStock;
 	}
 	
+	/**
+	 * for the result, same format as in parseFile(String filePath), except that the stock data is freefloat
+	 * @param filePath
+	 * @return
+	 * @throws Exception
+	 */
+	public static Map<String, ArrayList<Object>> parseFreefloatAndTotalShares(String filePath)  throws Exception{
+		Map<String, ArrayList<Object>> dataByStock = new HashMap();
+		
+		ArrayList<String> readData = Util.readFileByLine(filePath);
+		
+		ArrayList<Calendar> dateArr = new ArrayList<Calendar> ();
+				
+		int counter = 0;
+		for(String line : readData) {
+			String[] lineArr = line.split(",");
+			ArrayList<String> lineArray = new ArrayList<String>();
+			lineArray.addAll(Arrays.asList(lineArr));
+			
+			// get the 1st element and subsequent elements
+			String stockCode = lineArray.get(0);
+			ArrayList<String> data = new ArrayList<String>(lineArray.subList(1, lineArray.size()));
+			
+			if(counter == 0) { //header	
+				dateArr = Util.changeStrDateToArray(data, "yyyy/MM/dd");
+			}else {
+				ArrayList<Double> dataDouble = new ArrayList<Double>()	;
+				for(String freefloatStr:data) {
+					dataDouble.add(Util.isDouble(freefloatStr)?Double.parseDouble(freefloatStr):-1.0);
+				}
+				ArrayList<Object> dataArr = new ArrayList<Object>();
+				
+				dataArr.add(dataDouble);
+				dataArr.add(dateArr);
+				
+				dataByStock.put(stockCode, dataArr);
+			}
+			
+			counter++;
+		}
+		
+		return dataByStock;
+	}
+	
+	/**
+	 * to return the stock list
+	 * @param filePath
+	 * @return
+	 * @throws Exception
+	 */
+	public static ArrayList<String> parseStockList(String filePath) throws Exception{
+		ArrayList<String> readData = Util.readFileByLine(filePath);
+		
+		return new ArrayList<String>(Arrays.asList(readData.get(0).split(",")));
+	}
 	
 }
