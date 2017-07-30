@@ -13,7 +13,9 @@ import java.util.Map;
 import indexesPredictionUtils.Util;
 
 public class TurnoverScreening {
-	
+	/*
+	 * I need more data: listing date, total issued shares for all stocks
+	 */
 	public static ArrayList<String> allStocks = new ArrayList<String> ();
 	public static Map<String, ArrayList> allStockData = new HashMap();
 	public static ArrayList<String> eligibleStocks = new ArrayList<String>();
