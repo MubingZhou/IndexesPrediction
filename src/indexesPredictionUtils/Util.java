@@ -6,16 +6,18 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
 
 public class Util {
-	public static final String DATE_FORMAT = "dd/MM/yyyy";
-	public static final String CUT_OFF_DATE = "30/06/2017";	
+	//public static final String DATE_FORMAT = "dd/MM/yyyy";
+	//public static final String CUT_OFF_DATE = "31/12/2016";	
 	public static final int PAST_N_MONTH = 12;
 	public static final int PAST_N_MONTH2 = 6;
 	
@@ -34,9 +36,9 @@ public class Util {
 	}
 	
 	public static  Calendar getLastDayOfMonth(String date, String dateFormat) throws Exception{
-		SimpleDateFormat sdf =   new SimpleDateFormat(Util.DATE_FORMAT);
+		SimpleDateFormat sdf =   new SimpleDateFormat(dateFormat);
 		Calendar cal = Calendar.getInstance();
-		cal.setTime(sdf.parse(Util.CUT_OFF_DATE));
+		cal.setTime(sdf.parse(date));
 		
 		return getLastDayOfMonth(cal);
 	}
@@ -53,9 +55,9 @@ public class Util {
 		return cal;
 	}
 	public static  Calendar getFirstDayOfMonth(String date, String dateFormat) throws Exception{
-		SimpleDateFormat sdf =   new SimpleDateFormat(Util.DATE_FORMAT);
+		SimpleDateFormat sdf =   new SimpleDateFormat(dateFormat);
 		Calendar cal = Calendar.getInstance();
-		cal.setTime(sdf.parse(Util.CUT_OFF_DATE));
+		cal.setTime(sdf.parse(date));
 		
 		return getFirstDayOfMonth(cal);
 	}
@@ -89,6 +91,22 @@ public class Util {
 		try {
 			double d = Double.parseDouble(str);
 		}catch(NumberFormatException nfe) {
+			isOK = false;
+		}
+		catch(Exception e) {
+			isOK = false;
+		}
+		
+		return isOK;
+	}
+	
+	public static boolean isDate(String str, String dateFormat) {
+		boolean isOK = true;
+		
+		try {
+			SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
+			Date date = sdf.parse(str);
+		}catch(ParseException pe) {
 			isOK = false;
 		}
 		catch(Exception e) {
@@ -185,12 +203,17 @@ public class Util {
 	}
 	
 	public static ArrayList<Calendar> changeStrDateToArray(String[] dateStrArr, String dateFormat) throws Exception{
+		return changeStrDateToArray(new ArrayList<String>(Arrays.asList(dateStrArr)), dateFormat);
+		
+	}
+	
+	public static ArrayList<Calendar> changeStrDateToArray(ArrayList<String> dateStrArr, String dateFormat) throws Exception{
 		ArrayList<Calendar> dateArr = new ArrayList<Calendar>();
 		
-		for(int i = 0; i < dateStrArr.length; i++){
+		for(int i = 0; i < dateStrArr.size(); i++){
 			SimpleDateFormat sdf = new SimpleDateFormat(dateFormat) ;
 			Calendar thisCal = Calendar.getInstance();
-			Date thisDate = sdf.parse(dateStrArr[i]);
+			Date thisDate = sdf.parse(dateStrArr.get(i));
 			thisCal.setTime(thisDate);
 			dateArr.add(thisCal);
 		}

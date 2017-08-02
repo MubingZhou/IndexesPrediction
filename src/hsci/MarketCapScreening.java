@@ -21,6 +21,8 @@ public class MarketCapScreening {
 	
 	public static Double _95PctMarketCapLine;
 
+	public String CUT_OFF_DATE = "31/12/2016";
+	public String CUT_OFF_DATE_DATE_FORMAT = "dd/MM/yyyy";
 	/**
 	 * 
 	 * @param stockCodeArr
@@ -42,9 +44,9 @@ public class MarketCapScreening {
 		allStocks = stockCodeArr;
 		allStockData = stockData;
 		
-		SimpleDateFormat sdf =   new SimpleDateFormat(Util.DATE_FORMAT);
+		SimpleDateFormat sdf =   new SimpleDateFormat(CUT_OFF_DATE_DATE_FORMAT);
 		Calendar cutOffDate = Calendar.getInstance();
-		cutOffDate = Util.getLastDayOfMonth(Util.CUT_OFF_DATE, Util.DATE_FORMAT);  // use end of month
+		cutOffDate = Util.getLastDayOfMonth(CUT_OFF_DATE, CUT_OFF_DATE_DATE_FORMAT);  // use end of month
 		int cutOffDateMonth = cutOffDate.get(Calendar.MONTH);
 		
 		// =========== get avg month-end market cap for each stock ============

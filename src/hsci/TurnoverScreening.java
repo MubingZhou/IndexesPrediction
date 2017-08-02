@@ -13,28 +13,51 @@ import java.util.Map;
 import indexesPredictionUtils.Util;
 
 public class TurnoverScreening {
-	public static ArrayList<String> eligibleStocks = new ArrayList<String>();
+	public ArrayList<String> eligibleStocks = new ArrayList<String>();
 	
-	public static ArrayList<String> allStocks = new ArrayList<String> ();
-	public static Map<String, ArrayList<Object>> allStockData = new HashMap();
-	public static Map<String, ArrayList<Object>> allStockFreefloat = new HashMap();
-	public static Map<String, ArrayList<Object>> allStockTotalShares = new HashMap();
+	public ArrayList<String> allStocks = new ArrayList<String> ();
+	public Map<String, ArrayList<Object>> allStockData = new HashMap();
+	public Map<String, ArrayList<Object>> allStockFreefloat = new HashMap();
+	public Map<String, ArrayList<Object>> allStockTotalShares = new HashMap();
 	
 	//get the month-end total shares for each month 
 	// e.g. allStockEachMonthTotalShares.get(1) could get data for stock "388.HK" (stock order determined by stockCodeArr when this class is constructed)
 	// e.g. allStockEachMonthTotalShares.get(1).get(2) could get the month-end total shares for Apr for "388,HK" (if cutoff date = Jun 2017)
-	public static ArrayList<ArrayList<Double>> allStockEachMonthTotalShares = new ArrayList<ArrayList<Double>>(); 
+	public ArrayList<ArrayList<Double>> allStockEachMonthTotalShares = new ArrayList<ArrayList<Double>>(); 
 	// data structure same as allStockEachMonthTotalShares 
-	public static ArrayList<ArrayList<Double>> allStockEachMonthAdjFreefloatFactor = new ArrayList<ArrayList<Double>>(); 
-	public static ArrayList<ArrayList<Double>> allStockEachMonthMedianTurnover = new ArrayList<ArrayList<Double>>(); 
-	public static ArrayList<ArrayList<Double>> allStockEachMonthTurnoverVelocity = new ArrayList<ArrayList<Double>>(); 
+	public ArrayList<ArrayList<Double>> allStockEachMonthAdjFreefloatFactor = new ArrayList<ArrayList<Double>>(); 
+	public ArrayList<ArrayList<Double>> allStockEachMonthMedianTurnover = new ArrayList<ArrayList<Double>>(); 
+	public ArrayList<ArrayList<Double>> allStockEachMonthTurnoverVelocity = new ArrayList<ArrayList<Double>>(); 
 	
 	// for all stocks, it contains number of month that can pass the turnover screening test for last 12 months
 	// e.g if "allStockPast12MonthPassVelocityScreen.get(1) == 10", it says the for stock "388.HK", there are 10 months that will pass the turnover screening test
-	public static ArrayList<Double> allStockPast12MonthPassTurnoverScreen = new ArrayList<Double>();
-	public static ArrayList<Double> allStockPast6MonthPassTurnoverScreen = new ArrayList<Double>();
-	public static ArrayList<Double> allStockPassTurnoverScreen = new ArrayList<Double>(); // 1 - pass, 0 - not pass, -1 - not counted 
-	public static ArrayList<Double> allStockEligibleTurnoverScreen = new ArrayList<Double>(); // num of months eligible for counting
+	public ArrayList<Double> allStockPast12MonthPassTurnoverScreen = new ArrayList<Double>();
+	public ArrayList<Double> allStockPast6MonthPassTurnoverScreen = new ArrayList<Double>();
+	public ArrayList<Double> allStockPassTurnoverScreen = new ArrayList<Double>(); // 1 - pass, 0 - not pass, -1 - not counted 
+	public ArrayList<Double> allStockEligibleTurnoverScreen = new ArrayList<Double>(); // num of months eligible for counting
+	
+	public String CUT_OFF_DATE = "31/12/2016";
+	public String CUT_OFF_DATE_DATE_FORMAT = "dd/MM/yyyy";
+	
+	public double freefloatShift = 0.0;
+	
+	public TurnoverScreening(String cutoffDat, String cutoffDateFormat, double freefloatShiftNew) {
+		CUT_OFF_DATE = cutoffDat;
+		CUT_OFF_DATE_DATE_FORMAT = cutoffDateFormat;
+		freefloatShift = freefloatShiftNew;
+	}
+	
+	public void setFreefloatShit(double freefloatShiftNew) {
+		freefloatShift = freefloatShiftNew;
+	}
+	
+	public void setCutoffDate(String date) {
+		CUT_OFF_DATE = date;
+	}
+	
+	public void setCutoffDateFormat(String fmt) {
+		CUT_OFF_DATE_DATE_FORMAT = fmt;
+	}
 	
 	/**
 	 * 
@@ -52,13 +75,13 @@ public class TurnoverScreening {
 	 * @return
 	 * @throws Exception
 	 */
-	public TurnoverScreening(ArrayList<String> stockCodeArr, Map<String, ArrayList<Object>> stockData) throws Exception{
+	public void turnoverScreening(ArrayList<String> stockCodeArr, Map<String, ArrayList<Object>> stockData) throws Exception{
 		allStocks = stockCodeArr;
 		allStockData = stockData;
 		
-		SimpleDateFormat sdf =   new SimpleDateFormat(Util.DATE_FORMAT);
+		SimpleDateFormat sdf =   new SimpleDateFormat(CUT_OFF_DATE_DATE_FORMAT);
 		Calendar cutOffDate = Calendar.getInstance();
-		cutOffDate = Util.getLastDayOfMonth(Util.CUT_OFF_DATE, Util.DATE_FORMAT);  // use end of month
+		cutOffDate = Util.getLastDayOfMonth(CUT_OFF_DATE, CUT_OFF_DATE_DATE_FORMAT);  // use end of month
 		int cutOffDateMonth = cutOffDate.get(Calendar.MONTH);
 		
 		// for each stock, test if it can pass the screening
@@ -67,8 +90,15 @@ public class TurnoverScreening {
 			System.out.println("=========== stock code = " + stockCode + " ===========");
 			
 			ArrayList stockDate_Data = stockData.get(stockCode);
-			ArrayList<Double> stockTurnover = (ArrayList<Double>) stockDate_Data.get(0); 
-			ArrayList<Calendar> stockDate = (ArrayList<Calendar>) stockDate_Data.get(1); 
+			ArrayList<Double> stockTurnover = new ArrayList<Double>();
+			ArrayList<Calendar> stockDate = new ArrayList<Calendar>();
+			if(stockDate_Data != null) {
+				stockTurnover = (ArrayList<Double>) stockDate_Data.get(0); 
+				stockDate = (ArrayList<Calendar>) stockDate_Data.get(1); 
+			}else {
+				//System.out.println("=========== Null stock code = " + stockCode + " ===========");
+				//continue;
+			}
 			
 			// to get the data for a specific month
 			ArrayList<Double> medianTurnover = new ArrayList<Double>();
@@ -116,7 +146,7 @@ public class TurnoverScreening {
 			ArrayList<Double> eachMonthTurnonverMedian = getMedian(eachMonthTurnonver);
 			allStockEachMonthMedianTurnover.add(eachMonthTurnonverMedian);
 			
-			ArrayList<Double> eachMonthAdjFreefloatFactor = getEachMonthAdjFreefloatFactor(stockCode, cutOffDate);
+			ArrayList<Double> eachMonthAdjFreefloatFactor = getEachMonthAdjFreefloatFactor(stockCode, cutOffDate, freefloatShift);
 			allStockEachMonthAdjFreefloatFactor.add(eachMonthAdjFreefloatFactor);
 			
 			ArrayList<Double> eachMonthTotalShares = getEachMonthTotalShares(stockCode, cutOffDate);
@@ -170,10 +200,12 @@ public class TurnoverScreening {
 					if(numOfTradingMonth - okOver12Month > 1 ){
 						isPassed = false;
 					}
-				}else{
+				}else if(numOfTradingMonth > 0){
 					// if num of trading month < 6 months, all months should not be failed
 					if(numOfTradingMonth > okOver12Month)
 						isPassed = false;
+				}else {
+					isPassed = false;
 				}
 			}else{
 				if(!(okOver12Month >= 10 && okOver6Month >= 5)) 
@@ -197,7 +229,7 @@ public class TurnoverScreening {
 	 * @return
 	 * @throws Exception
 	 */
-	public static ArrayList<Double> getMedian(ArrayList<ArrayList<Double>> eachMonthTurnonver) throws Exception{
+	public ArrayList<Double> getMedian(ArrayList<ArrayList<Double>> eachMonthTurnonver) throws Exception{
 		ArrayList<Double> medianTurnover = new ArrayList<Double>();
 		
 		for(int i = 0; i < eachMonthTurnonver.size(); i++) {
@@ -227,7 +259,7 @@ public class TurnoverScreening {
 	 * @return
 	 * @throws Exception
 	 */
-	public static Double getSingleArrayMedian(ArrayList<Double> singleMonthData) throws Exception{
+	public Double getSingleArrayMedian(ArrayList<Double> singleMonthData) throws Exception{
 		Double median = null;
 		
 		//Collections.sort(singleMonthData, new SortArrayListDouble());
@@ -236,7 +268,7 @@ public class TurnoverScreening {
 			 public int compare(Double arg0, Double arg1) {
 	                return arg0.compareTo(arg1);
 	            }
-		});
+		});  // 
 		
 		int len = singleMonthData.size() ;
 		
@@ -251,12 +283,13 @@ public class TurnoverScreening {
 
 	/**
 	 * for a specific stock, to return a 12-element arraylist with each element be the freefloat pct for that month end
+	 * month closer to the cutoff date should be at the front. e.g.
 	 * @param stockCode
 	 * @param cutoffDate
 	 * @return
 	 * @throws Exception
 	 */
-	public static ArrayList<Double> getEachMonthAdjFreefloatFactor(String stockCode, Calendar cutoffDate) throws Exception{
+	public ArrayList<Double> getEachMonthAdjFreefloatFactor(String stockCode, Calendar cutoffDate, double shift) throws Exception{
 		if(allStockFreefloat == null || allStockFreefloat.size() == 0) { // read the data
 			String filePath = "D:\\stock data\\Indexes Prediction\\HSCI\\free float.csv";
 			allStockFreefloat = ParseFile.parseFreefloatAndTotalShares(filePath);
@@ -268,8 +301,8 @@ public class TurnoverScreening {
 		ArrayList<Double> freefloatArr = (ArrayList<Double>) dataArr.get(0);
 		ArrayList<Calendar> dateArr = (ArrayList<Calendar>) dataArr.get(1);
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-		System.out.println("--dateArr.get(1) = " + sdf.format(dateArr.get(1).getTime()));
-		//Collections.sort(dateArr, Collections.reverseOrder()); // descending
+		//System.out.println("--dateArr.get(1) = " + sdf.format(dateArr.get(1).getTime()));
+		//Collections.sort(dateArr, Collections.reverseOrder()); // descending 
 		
 		ArrayList<Double> eachMonthAdjFreefloat = new ArrayList<Double>();
 		for(int i = 0; i < 12; i++) { // construct eachMonthAdjFreefloat 
@@ -281,7 +314,14 @@ public class TurnoverScreening {
 
 			int diff = Util.getMonthDiff(cutoffDate, thisMonthCal);
 			if(diff < 12 && diff >= 0) {
-				eachMonthAdjFreefloat.set(diff, freefloatArr.get(i));
+				double freefloatToSet = freefloatArr.get(i) + shift;
+				if(freefloatToSet > 1)
+					freefloatToSet = 1;
+				if(freefloatToSet <= 0)
+					freefloatToSet = 0.01;
+				
+				eachMonthAdjFreefloat.set(diff, freefloatToSet);
+				//System.out.println("-- free float, data to add: " + sdf.format(thisMonthCal.getTime()));
 			}
 		}
 		
@@ -295,7 +335,7 @@ public class TurnoverScreening {
 	 * @return
 	 * @throws Exception
 	 */
-	public static ArrayList<Double> getEachMonthTotalShares(String stockCode, Calendar cutoffDate) throws Exception{
+	public ArrayList<Double> getEachMonthTotalShares(String stockCode, Calendar cutoffDate) throws Exception{
 		if(allStockTotalShares == null || allStockTotalShares.size() == 0) { // read the data
 			String filePath = "D:\\stock data\\Indexes Prediction\\HSCI\\total shares.csv";
 			allStockTotalShares = ParseFile.parseFreefloatAndTotalShares(filePath);
@@ -330,10 +370,15 @@ public class TurnoverScreening {
 		ArrayList<String> toWrite = new ArrayList<String> ();
 		
 		//header
-		header = "stock code,num OK last 12 months,num OK last 6 months,num eligible month,is passed";
+		header = "stock code,num OK last 12 months,num OK last 6 months,num eligible month,is passed,free float shift";
+		SimpleDateFormat sdf = new SimpleDateFormat("MMM yyyy"); 
+		SimpleDateFormat sdf2 = new SimpleDateFormat(CUT_OFF_DATE_DATE_FORMAT); 
 		for(int j = 0; j < 12; j++) {
-			String jStr = String.valueOf(j);
-			header = header + "," + jStr + " month - total shares," + jStr + " month - freefloat factor," + jStr + " month - median turnover," + jStr + " month - velocity";
+			Calendar toOutputCal = Calendar.getInstance();
+			toOutputCal.setTime(sdf2.parse(CUT_OFF_DATE));
+			toOutputCal.add(Calendar.MONTH, -j);
+			String jStr = sdf.format(toOutputCal.getTime());
+			header = header + "," + jStr + " - total shares," + jStr + " - freefloat factor," + jStr + " - median turnover," + jStr + " - velocity";
 		}
 		toWrite.add(header);
 		
@@ -345,9 +390,9 @@ public class TurnoverScreening {
 			String numOKLast12Month = String.valueOf(allStockPast12MonthPassTurnoverScreen.get(i));
 			String numOKLast6Month = String.valueOf(allStockPast6MonthPassTurnoverScreen.get(i));
 			String numEligibleMonth = String.valueOf(allStockEligibleTurnoverScreen.get(i));
-			String isPassed = allStockPassTurnoverScreen.get(i) == 1.0?"Y":"";
+			String isPassed = allStockPassTurnoverScreen.get(i) == 1.0?"1":"";
 			
-			lineToWrite = stockCode + "," + numOKLast12Month + "," + numOKLast6Month  + "," + numEligibleMonth + "," + isPassed;
+			lineToWrite = stockCode + "," + numOKLast12Month + "," + numOKLast6Month  + "," + numEligibleMonth + "," + isPassed + "," + String.valueOf(freefloatShift);
 			
 			// output each month's data
 			for(int j = 0; j < 12; j++) {
