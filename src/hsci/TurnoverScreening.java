@@ -234,17 +234,19 @@ public class TurnoverScreening {
 		
 		for(int i = 0; i < eachMonthTurnonver.size(); i++) {
 			ArrayList<Double> thisMonthTurnoverData = eachMonthTurnonver.get(i);
+			ArrayList<Double> thisMonthTurnoverData_nonZero = new ArrayList<Double> (); // only store non-zero values 
 			
 			Double thisMonthTurnoverMedian = null;
 			
 			if(thisMonthTurnoverData != null){ // if not listed this month
-				// to see if the trading volume is not always 0 this month
-				double cumTurn = 0.0;
+				//only consider non-zero days
 				for(int j = 0; j < thisMonthTurnoverData.size(); j++){
-					cumTurn = cumTurn + thisMonthTurnoverData.get(j);
+					Double oneDayTurnover = thisMonthTurnoverData.get(j);
+					if( !oneDayTurnover.equals(0.0))
+						thisMonthTurnoverData_nonZero.add(oneDayTurnover);
 				}
-				if(cumTurn > 0)
-					thisMonthTurnoverMedian = getSingleArrayMedian(thisMonthTurnoverData);
+				if(thisMonthTurnoverData_nonZero != null & thisMonthTurnoverData_nonZero.size()>0)
+					thisMonthTurnoverMedian = getSingleArrayMedian(thisMonthTurnoverData_nonZero);
 			}
 			
 			medianTurnover.add(thisMonthTurnoverMedian);

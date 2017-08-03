@@ -99,16 +99,17 @@ public class ParseFile {
 	 * @return
 	 * @throws Exception
 	 */
-	public static Map<String, ArrayList<Object>> parseFile_specific(String filePath)  throws Exception{
+	public static Map<String, ArrayList<Object>> parseFile_specific(String filePath, Calendar cutoffDate)  throws Exception{
 		/*
 		 * Please note that this function is designed to parse a specific file, it is not universally applicable.
 		 */
 		Map<String, ArrayList<Object>> dataByStock = new HashMap();
 		//========= before read stock file, get all trading date first =========
-		String tradingDateFilePath = "D:\\stock data\\Indexes Prediction\\HSCI\\all trading date.csv";
+		/*String tradingDateFilePath = "D:\\stock data\\Indexes Prediction\\HSCI\\all interested trading date.csv";
 		String allTradingDateStr = Util.readFileByLine(tradingDateFilePath).get(0);
 		String[]  allTradingDateStrArr = allTradingDateStr.split(",");
-		ArrayList<Calendar> allTradingDate = Util.changeStrDateToArray(allTradingDateStrArr, "yyyy/MM/dd");
+		ArrayList<Calendar> allTradingDate = Util.changeStrDateToArray(allTradingDateStrArr, "dd/MM/yyyy");*/
+		ArrayList<Calendar> allTradingDate = generateInterestedTradingDate(cutoffDate);
 		
 		// ============ get stock-specific trading date & turnover =============
 		BufferedReader bufReader = Util.readFile_returnBufferedReader(filePath);
@@ -150,7 +151,7 @@ public class ParseFile {
 			for(String str : thisStockVolStr)
 				thisStockVol.add(Double.parseDouble(str));
 			
-			// align thisStockTradingDate with allTradingDate
+			// align thisStockTradingDate with allTradingDate. If there is no trading on a specific date, it will be filled with 0
 			int thisInd_thisStockTradingDate = 0; 
 			Calendar thisStockFirstTradingDate = thisStockTradingDate.get(0);
 			for(int i = allTradingDate.indexOf(thisStockFirstTradingDate); i < allTradingDate.size(); i++){
@@ -228,6 +229,70 @@ public class ParseFile {
 		return new ArrayList<String>(Arrays.asList(readData.get(0).split(",")));
 	}
 	
+	/**
+	 * Input a list of stock code, this function will get the turnover data from Webb
+	 * Return value is the same as the function "parseFile"
+	 * @param stockCodeArr
+	 * @return
+	 * @throws Exception
+	 */
+	public static Map<String, ArrayList<Object>> parseStockData_Webb(ArrayList<String> stockCodeArr) throws Exception{
+		Map<String, ArrayList<Object>> dataByStock = new HashMap();
+		
+		for(String stockCode : stockCodeArr) {
+			System.out.println("=========== stock code = " + stockCode + " ===========");
+			ArrayList<Object> singleStockData = parseSingleStockData_Webb(stockCode);
+			dataByStock.put(stockCode, singleStockData);
+		}
+		
+		return dataByStock;
+	}
+	
+	/**
+	 * to return single stock turnover (# of shares traded). Data set: downloaded from Webb
+	 * The return value, singleStockData, is in the form of ArrayList<Object>. It contains another two ArrayList
+	 * 1st ArrayList: in the form of ArrayList<Double>, it contains stock turnover data.
+	 * 2nd ArrayList: in the form of ArrayList<Calendar>, it contains date.
+	 * @param stockCode
+	 * @return
+	 * @throws Exception
+	 */
+	public static ArrayList<Object> parseSingleStockData_Webb(String stockCode) throws Exception{
+		ArrayList<Object> singleStockData = new ArrayList<Object>();
+		ArrayList<Double> turnoverData = new ArrayList<Double>();
+		ArrayList<Calendar> dateData = new ArrayList<Calendar>();
+		
+		String filePath = "D:\\stock data\\stock daily data\\" + stockCode + ".csv";
+		
+		BufferedReader reader = Util.readFile_returnBufferedReader(filePath);
+		String line = "";
+		int counter = 0;
+		while((line = reader.readLine()) != null) {
+			if(counter == 0) { // first line
+				
+			}else {
+				ArrayList<String> lineArr = new ArrayList<String>(Arrays.asList(line.split(",")));
+				
+				//get turnover data
+				Double turnvoer = Double.parseDouble(lineArr.get(8));
+						
+				// get date
+				Calendar cal =Util.dateStr2Date(lineArr.get(0), "yyyy-MM-dd");
+				
+				turnoverData.add(turnvoer);
+				dateData.add(cal);
+			}
+			counter ++;
+				
+		}// end of while
+		
+		singleStockData.add(turnoverData);
+		singleStockData.add(dateData);
+		
+		return singleStockData;
+	}
+	
+	
 	public static void outputStockDataMap(Map<String, ArrayList<Object>> dataByStock) throws Exception{
 		/*
 		 * From now on, we can use the below files as data source. 
@@ -263,6 +328,49 @@ public class ParseFile {
 				fw.write("\n");
 		}
 		fw.close();
+	}
+	
+	/**
+	 * get the trading date between the cutoff date and 12 months ago
+	 * @param cutoffDate
+	 * @return
+	 * @throws Exception
+	 */
+	public static ArrayList<Calendar> generateInterestedTradingDate(Calendar cutoffDate) throws Exception{
+		ArrayList<Calendar> tradingDate = new ArrayList<Calendar>()	;
+		SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+		
+		//============ set the start date ==============
+		Calendar beginDate = Calendar.getInstance();
+		beginDate.setTime(cutoffDate.getTime());
+		beginDate.add(Calendar.MONTH, -11);
+		beginDate.set(Calendar.DATE, 1); // set beginDate to be the 1st date of 12 months ago
+		
+		//============ read all trading date =============
+		String tradingDateFilePath = "D:\\stock data\\Indexes Prediction\\HSCI\\all trading date.csv";
+		String allTradingDateStr = Util.readFileByLine(tradingDateFilePath).get(0);
+		String[]  allTradingDateStrArr = allTradingDateStr.split(",");
+		ArrayList<Calendar> allTradingDate = Util.changeStrDateToArray(allTradingDateStrArr, "yyyy/MM/dd");
+		
+		//============ get interested trading date & write to file ==================
+		FileWriter fw = new FileWriter("D:\\stock data\\Indexes Prediction\\HSCI\\all interested trading date.csv");
+		int counter = 0;
+		for(int i = 0; i < allTradingDate.size(); i++) {
+			Calendar thisDate = allTradingDate.get(i);
+			
+			if(thisDate.compareTo(beginDate) >= 0 && thisDate.compareTo(cutoffDate) <= 0) {
+				tradingDate.add(thisDate);
+				
+				if(counter != 0)
+					fw.write(",");
+				fw.write(sdf.format(thisDate));
+			}
+				
+			
+		}
+		fw.close();
+		
+		return tradingDate;
 	}
 	
 }

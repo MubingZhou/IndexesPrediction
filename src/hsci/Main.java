@@ -21,17 +21,20 @@ public class Main {
 		try {
 			Map<String, ArrayList<Object>> allStockData2 = 
 					ParseFile.parseFile("D:\\stock data\\Indexes Prediction\\HSCI\\2016H1 - 2017H1 turnover data (600 stocks).csv");
+			ArrayList<String> stockCodeArr = ParseFile.parseStockList("D:\\stock data\\Indexes Prediction\\HSCI\\stock list - 600 stocks.csv");
+			ParseFile.parseStockData_Webb(stockCodeArr);
 			
-			//double[] shiftArr = {0,0.05,0.1,0.15,0.2,-0.05,-0.1,-0.15,-0.2,1};
-			double[] shiftArr = {0,0.2,1};
+			double[] shiftArr = {0,0.05,0.1,0.15,0.2,-0.05,-0.1,-0.15,-0.2,1};
+			//double[] shiftArr = {0,0.2,1};
+			//String CUT_OFF_DATE = "31/12/2016";
 			String CUT_OFF_DATE = "31/12/2016";
 			String CUT_OFF_DATE_DATE_FORMAT = "dd/MM/yyyy";
 			
-			
+			if(false)
 			for(double shift: shiftArr) {
 				TurnoverScreening ts = new TurnoverScreening(CUT_OFF_DATE, CUT_OFF_DATE_DATE_FORMAT, shift);
 				
-				ts.turnoverScreening(ParseFile.parseStockList("D:\\stock data\\Indexes Prediction\\HSCI\\stock list - 600 stocks.csv"),allStockData2);
+				ts.turnoverScreening(stockCodeArr,allStockData2);
 				ts.outputScreeningResults("D:\\stock data\\Indexes Prediction\\HSCI\\output - shift=" + String.valueOf(shift) + ".csv");
 			}
 			
